@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +14,14 @@
  * limitations under the License.
  */
 
-var Promise = require('bluebird')
-    , util = require('util')
+var util = require('util')
     , MqttFormat = require('../common/mqttFormat.js')
+    
+const MQTT = require('../common/constants.js').MQTT
+        
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER
   
 /**
  * Parses IOPA request into MQTT packet
@@ -26,28 +30,28 @@ var Promise = require('bluebird')
  * @method invoke
  * @param context IOPA context dictionary
  */
-module.exports = function MQTTClientPacketSend(context) {      
+module.exports = function MQTTClientPacketSend(context) {    
     try {
         // send the request
         MqttFormat.sendRequest(context);
     }
     catch (err) {
-        context["server.Logger"].error("[MQTTCLIENTPACKETSEND] Unable to send MQTT packet " 
-            + context["iopa.Method"] + ": " + err);
+        context[SERVER.Logger].error("[MQTTCLIENTPACKETSEND] Unable to send MQTT packet " 
+            + context[IOPA.Method] + ": " + err);
         context =null;
         return Promise.reject('Unable to parse IOPA Message into MQTT packet');
     }
   
    // hook into response event
       return new Promise(function(resolve, reject){
-         context["iopa.Events"].on("response", MQTTClientPacket_Response.bind(this, context, resolve));
+         context[IOPA.Events].on(IOPA.EVENTS.Response, MQTTClientPacket_Response.bind(this, context, resolve));
      });
 };
 
 function MQTTClientPacket_Response(context, done, response) {
-    console.log("[MQTT-CLIENT] RESPONSE " + response["iopa.Method"]);
-    switch (response["iopa.Method"]) {
-    case 'PUBLISH':
+    console.log("[MQTT-CLIENT] RESPONSE " + response[IOPA.Method]);
+    switch (response[IOPA.Method]) {
+    case MQTT.METHODS.PUBLISH:
          done(response);
          break;
     default:

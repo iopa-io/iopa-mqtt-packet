@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
-  *
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,10 +15,10 @@
  */
  
 const iopa = require('iopa')
-    , Promise = require('bluebird')
     , util = require('util')
     , Events = require('events')
-    , mqtt = require('../index.js');
+    , mqtt = require('../index.js')
+    , iopaStream = require('iopa-common-stream');
     
 var should = require('should');
 
@@ -38,8 +37,7 @@ describe('#MQTT Server()', function() {
        
         if (["CONNACK", "PINGRESP"].indexOf(context.response["iopa.Method"]) >=0)
           context.response["iopa.Body"].end();
-
-    
+ 
           if (["SUBACK"].indexOf(context.response["iopa.Method"]) >=0)
             {
               context.response["mqtt.Granted"] =[0,1,2,128];
@@ -47,20 +45,16 @@ describe('#MQTT Server()', function() {
             }
     
           if (["CONNECT"].indexOf(context["iopa.Method"]) >=0)
-                sessionContextDemo = context["server.ChannelContext"];
+                sessionContextDemo = context["server.ParentContext"];
                
          events.emit("data", context);  
+         
          return next();
           });
           
-        var appClient = new iopa.App();
-        
-        appClient.use(function(context, next){
-          return next();
-            });
-          
+             
       var serverOptions = {};
-      server = mqtt.createServer(serverOptions,appServer.build(), appClient.build());
+      server = mqtt.createServer(serverOptions,appServer.build());
       
       if (!process.env.PORT)
         process.env.PORT = 1883;
@@ -87,25 +81,35 @@ describe('#MQTT Server()', function() {
    });
     
     it('should connect via MQTT', function(done) {
-        var context = mqttClient["server.CreateRequest"]("/", "CONNECT"); 
-        context["mqtt.Clean"] = false;
-        context["mqtt.ClientID"] = "CLIENTID-1";
-        return context.send().then(function(response){
-           numberConnections ++;
-            response["iopa.Method"].should.equal('CONNACK');
-           events.emit("CLIENT-CONNACK");
-           done();
+      
+         mqttClient.send("/", 
+            {"iopa.Method": "CONNECT", 
+            "mqtt.Clean": false,
+            "mqtt.ClientID": "CLIENTID-1" }   
+          ).then(function(response){
+            numberConnections ++;
+              response["iopa.Method"].should.equal('CONNACK');
+            events.emit("CLIENT-CONNACK");
+            done();
            });
     });
     
     it('should subscribe via MQTT', function(done) {
-          var context = mqttClient["server.CreateRequest"]("/projector", "SUBSCRIBE");
-          context.send().then(function(response){
+      
+       mqttClient.send("/projector", 
+          {"iopa.Method": "SUBSCRIBE"})
+          .then(function(response){
              response["iopa.Method"].should.equal('SUBACK');
-             var context = sessionContextDemo["server.CreateRequest"]("/projector", "PUBLISH");
-             context["iopa.Body"].end(new Buffer("Hello World"));
-             done();
-           });
+             
+             sessionContextDemo.fetch("/projector", 
+             {
+               "iopa.Method": "PUBLISH", 
+               "iopa.Body": new iopaStream.OutgoingStream('Hello World')
+               }
+               , function(){   
+                         done();
+                  });
+          });
     });
             
     it('should close', function(done) {

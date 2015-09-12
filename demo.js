@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +16,6 @@
 
 const iopa = require('iopa')
     , mqtt = require('./index.js')      
-    , Promise = require('bluebird')
     , util = require('util')
     , iopaStream = require('iopa-common-stream');
 
@@ -42,33 +40,25 @@ appServer.use(function(context, next){
     }
     
    if (["CONNECT"].indexOf(context["iopa.Method"]) >=0)
-        sessionContextDemo = context["server.ChannelContext"];
+        sessionContextDemo = context["server.ParentContext"];
        return next();
 
 });
 
-var appClient = new iopa.App();
-appClient.use(iopaMessageLogger);
-
-appClient.use(function(context, next){
-   return next();
-    });
-    
 var serverOptions = {
     "server.LocalPortReuse" : true
   , "server.IsGlobalClient" : false
 };
-
-var clientOptions = { "server.IsGlobalClient" : true
-                    , "server.LocalPortReuse" : false};
-                    
-var server = mqtt.createServer(serverOptions, appServer.build(), appClient.build());
+                  
+var server = mqtt.createServer(serverOptions, appServer.build());
+server.connectuse(iopaMessageLogger.connect);
 
 if (!process.env.PORT)
   process.env.PORT = 1883;
 
 var context;
 var mqttClient;
+
 server.listen(process.env.PORT, process.env.IP)
   .then(function(){
     server.log.info("[DEMO] Server is on port " + server.port );
@@ -78,24 +68,20 @@ server.listen(process.env.PORT, process.env.IP)
      mqttClient = cl;
     server.log.info("[DEMO] Client is on port " + mqttClient["server.LocalPort"]);
     
-    var context = mqttClient["server.CreateRequest"]("/", "CONNECT"); 
-    context["mqtt.Clean"] = false;
-    context["mqtt.ClientID"] = "CLIENTID-1";
-    return context.send();
-  })
+   return mqttClient.send("/", 
+    {"iopa.Method": "CONNECT", 
+    "mqtt.Clean": false,
+    "mqtt.ClientID": "CLIENTID-1" });   
+  
+  }).then(function(response){
+       server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
+       
+       return mqttClient.send("/projector", {"iopa.Method": "SUBSCRIBE"});
+        }, function(err){console.log(err);})
   .then(function(response){
        server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
-         var context = mqttClient["server.CreateRequest"]("/projector", "SUBSCRIBE");
-         return context.send()
-        })
-  .then(function(response){
-       server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
-         var context = sessionContextDemo["server.CreateRequest"]("/projector", "PUBLISH");
-            // no PUBACK Responses so no promises here
-            context["iopa.Body"].end(new Buffer("Hello World"));
-            setTimeout(function(){server.close()}, 2000);
+       sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
+             // no PUBACK Responses so no  promise then here
+       setTimeout(function(){server.close()}, 2000);
     })
-    
-    
-    
-    
+    .catch(function(err){ console.log(err);  throw err;});

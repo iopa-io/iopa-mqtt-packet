@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +14,12 @@
  * limitations under the License.
  */
 
-var Promise = require('bluebird')
-    , util = require('util')
+var  util = require('util')
     , MqttFormat = require('../common/mqttFormat.js')
+    
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER
   
   /**
  * MQTT IOPA Middleware for Client Connection Defaults
@@ -28,14 +30,14 @@ var Promise = require('bluebird')
  * @public
  */
 function MQTTClientChannelParser(app) {
-    if (!app.properties["server.Capabilities"]["iopa-mqtt.Version"])
+    if (!app.properties[SERVER.Capabilities]["iopa-mqtt.Version"])
         throw ("Missing Dependency: MQTT Server/Middleware in Pipeline");
 
-   app.properties["server.Capabilities"]["MQTTClientChannelParser.Version"] = "1.0";
+   app.properties[SERVER.Capabilities]["MQTTClientChannelParser.Version"] = "1.0";
 }
 
 MQTTClientChannelParser.prototype.invoke = function MQTTClientChannelParser_invoke(channelContext, next){
-     MqttFormat.inboundParseMonitor(channelContext, "response");
+     MqttFormat.inboundParseMonitor(channelContext, IOPA.EVENTS.Response);
      return next();
 };
 

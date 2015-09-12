@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- var Promise = require('bluebird')
-    , MqttPacket = require('mqtt-packet')
+ var MqttPacket = require('mqtt-packet')
     , util = require('util')
     , iopaStream = require('iopa-common-stream')
-    , iopaContextFactory = require('iopa').context.factory
+    , iopaContextFactory = require('iopa').factory
+    
+const MQTT = require('./constants.js').MQTT
+    
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER
     
 // SETUP REQUEST DEFAULTS 
 const maxMessageId   = Math.pow(2, 16);
@@ -34,50 +38,50 @@ var _lastMessageId = Math.floor(Math.random() * (maxMessageId - 1));
  */
 module.exports.sendRequest = function mqttFormat_SendRequest(context) {
 
-       if (!context["iopa.MessageId"])
-        context["iopa.MessageId"] = _nextMessageId();
+       if (!context[IOPA.MessageId])
+        context[IOPA.MessageId] = _nextMessageId();
      
        var  packet = {
-              cmd: context["iopa.Method"].toLowerCase()
+              cmd: context[IOPA.Method].toLowerCase()
             };
     
-      switch (context["iopa.Method"]) {
-        case "CONNECT":
-           packet.protocolId = context["mqtt.ProtocolId"];
-           packet.protocolVersion = context["mqtt.ProtocolVersion"];
-           packet.clean = context["mqtt.Clean"];
-           packet.clientId = context["mqtt.ClientID"];
-           packet.keepalive = context["mqtt.Keepalive"];
-           packet.username = context["mqtt.Username"];
-           packet.password = context["mqtt.Password"];
-           packet.will = context["mqtt.Will"];
+      switch (context[IOPA.Method]) {
+        case MQTT.METHODS.CONNECT:
+           packet.protocolId = context[MQTT.ProtocolId];
+           packet.protocolVersion = context[MQTT.ProtocolVersion];
+           packet.clean = context[MQTT.Clean];
+           packet.clientId = context[MQTT.ClientId];
+           packet.keepalive = context[MQTT.KeepAlive];
+           packet.username = context[MQTT.Username];
+           packet.password = context[MQTT.Password];
+           packet.will = context[MQTT.Will];
            break;
-        case "SUBSCRIBE":
-           packet.messageId = context["iopa.MessageId"];
-           packet.qos = context["mqtt.Qos"];           
-           packet.subscriptions =  context["mqtt.Subscriptions"];
+        case MQTT.METHODS.SUBSCRIBE:
+           packet.messageId = context[IOPA.MessageId];
+           packet.qos = context[MQTT.Qos];           
+           packet.subscriptions =  context[MQTT.Subscriptions];
           break;
-        case "UNSUBSCRIBE":
-           packet.messageId = context["iopa.MessageId"];
-           packet.unsubscriptions = context["mqtt.Unsubscriptions"];
+        case MQTT.METHODS.UNSUBSCRIBE:
+           packet.messageId = context[IOPA.MessageId];
+           packet.unsubscriptions = context[MQTT.Subscriptions];
           break; 
-        case "PUBLISH":
-           packet.messageId = context["iopa.MessageId"];
-           packet.qos = context["mqtt.Qos"];
-           packet.dup = context["mqtt.Dup"];
-           packet.retain = context["mqtt.Retain"];
-           packet.topic = context["iopa.Path"];
-           packet.payload = context["iopa.Body"].toBuffer();
+        case MQTT.METHODS.PUBLISH:
+           packet.messageId = context[IOPA.MessageId];
+           packet.qos = context[MQTT.Qos];
+           packet.dup = context[MQTT.Dup];
+           packet.retain = context[MQTT.Retain];
+           packet.topic = context[IOPA.Path];
+           packet.payload = context[IOPA.Body].toBuffer();
            packet.length = packet.payload.length;
            break; 
-        case "PINGREQ":
+        case MQTT.METHODS.PINGREQ:
            break;
-        case "DISCONNECT":
+        case MQTT.METHODS.DISCONNECT:
            break;
      }
            
      var buf = MqttPacket.generate(packet);
-     context["server.RawStream"].write(buf);
+      context[SERVER.RawStream].write(buf);
 };
 
 /**
@@ -90,7 +94,7 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
       parser.on('packet', _invokePacket);
       parser.on('error', _error.bind(parentContext));
     
-      parentContext["server.RawStream"].on('data', function(chunk) {
+      parentContext[SERVER.RawStream].on('data', function(chunk) {
           parser.parse(chunk);
       });
       
@@ -98,33 +102,31 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
        
       function _invokePacket(packet) {
         var context = iopaContextFactory.createContext();
-        context["server.TLS"] = parentContext["server.TLS"];
-        context["server.RemoteAddress"] = parentContext["server.RemoteAddress"];
-        context["server.RemotePort"] = parentContext["server.RemotePort"] ;
-        context["server.LocalAddress"] = parentContext["server.LocalAddress"];
-        context["server.LocalPort"] = parentContext["server.LocalPort"]; 
-        context["server.RawStream"] = parentContext["server.RawStream"];    
-        context.response["server.TLS"] = context["server.TLS"];    
-        context.response["server.RemoteAddress"] = context["server.RemoteAddress"];    
-        context.response["server.RemotePort"] = context["server.RemotePort"];    
-        context.response["server.LocalAddress"] = context["server.LocalAddress"];    
-        context.response["server.LocalPort"] = context["server.LocalPort"];    
-        context.response["server.RawStream"] = context["server.RawStream"];    
-        context["server.Logger"] = parentContext["server.Logger"];
+        context[SERVER.TLS] = parentContext[SERVER.TLS];
+        context[SERVER.RemoteAddress] = parentContext[SERVER.RemoteAddress];
+        context[SERVER.RemotePort] = parentContext[SERVER.RemotePort] ;
+        context[SERVER.LocalAddress] = parentContext[SERVER.LocalAddress];
+        context[SERVER.LocalPort] = parentContext[SERVER.LocalPort]; 
+        context[SERVER.RawStream] = parentContext[SERVER.RawStream];
+        context.response[SERVER.TLS] = context[SERVER.TLS];
+        context.response[SERVER.RemoteAddress] = context[SERVER.RemoteAddress];
+        context.response[SERVER.RemotePort] = context[SERVER.RemotePort] ;
+        context.response[SERVER.LocalAddress] = context[SERVER.LocalAddress];
+        context.response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
+        context.response[SERVER.RawStream] = context[SERVER.RawStream];    
+        context[SERVER.Logger] = parentContext[SERVER.Logger];
         
-        context["server.ChannelContext"] = parentContext;
-        context["server.CreateRequest"] = parentContext["server.CreateRequest"];
+        context[SERVER.ParentContext] = parentContext;
+        context[SERVER.Fetch] = parentContext[SERVER.Fetch];
         _parsePacket(packet, context);
-      
-        parentContext["iopa.Events"].emit(eventType, context);
-        context["server.InProcess"] = false;
-        _onClose(context);
+        parentContext[IOPA.Events].emit(eventType, context);
+        
         that = null;
         context = null;
       }
       
       function _error(context) {
-        context["server.Logger"].error("[MQTTFORMAT] Error parsing MQTT Packet");
+          context[SERVER.Logger].error("[MQTTFORMAT] Error parsing MQTT Packet");
       } 
 };
 
@@ -139,38 +141,38 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
  */
 module.exports.defaultContext = function MQTTPacketClient_defaultContext(context) {  
 
-  switch (context["iopa.Method"]) {
-    case "CONNECT":
-       context["mqtt.ProtocolId"] = "MQTT";
-       context["mqtt.ProtocolVersion"] = 4;
-       context["mqtt.Clean"] = true;
-       context["mqtt.ClientID"] = context["server.Id"];
-       context["mqtt.Keepalive"] = 0;
-       context["mqtt.Username"] = null;
-       context["mqtt.Password"] = null;
-       context["mqtt.Will"] = undefined;
-       context["iopa.MessageId"] = "connect";
+  switch (context[IOPA.Method]) {
+    case MQTT.METHODS.CONNECT:
+       context[MQTT.ProtocolId] = "MQTT";
+       context[MQTT.ProtocolVersion] = 4;
+       context[MQTT.Clean] = true;
+       context[MQTT.ClientId] = context[SERVER.SessionId];
+       context[MQTT.Keepalive] = 0;
+       context[MQTT.UserName] = null;
+       context[MQTT.Password] = null;
+       context[MQTT.Will] = undefined;
+       context[IOPA.MessageId] = "connect";
        break;
-    case "SUBSCRIBE":
-       context["mqtt.Qos"] = 0;
-       context["iopa.MessageId"] = _nextMessageId();
-       context["mqtt.Subscriptions"] = [{"topic": context["iopa.Path"], "qos": 0}];
+    case MQTT.METHODS.SUBSCRIBE:
+       context[MQTT.Qos] = 0;
+       context[IOPA.MessageId] = _nextMessageId();
+       context[MQTT.Subscriptions] = [{"topic": context[IOPA.Path], "qos": 0}];
       break;
-    case "UNSUBSCRIBE":
-       context["iopa.MessageId"] = _nextMessageId();
-       context["mqtt.Unsubscriptions"] = [context["iopa.Path"]];
+    case MQTT.METHODS.UNSUBSCRIBE:
+       context[IOPA.MessageId] = _nextMessageId();
+       context[MQTT.Subscriptions] = [context[IOPA.Path]];
       break; 
-    case "PUBLISH":
-       context["iopa.MessageId"] = _nextMessageId();
-       context["mqtt.Qos"] = 2;
-       context["mqtt.Dup"] = false;
-       context["mqtt.Retain"] = false;
+    case MQTT.METHODS.PUBLISH:
+       context[IOPA.MessageId] = _nextMessageId();
+       context[MQTT.Qos] = 2;
+       context[MQTT.Dup] = false;
+       context[MQTT.Retain] = false;
        break; 
-    case "PINGREQ":
-       context["iopa.MessageId"] = "ping";
+    case MQTT.METHODS.PINGREQ:
+       context[IOPA.MessageId] = "ping";
        break;
-    case "DISCONNECT":
-        context["iopa.MessageId"] = "disconnect";
+    case MQTT.METHODS.DISCONNECT:
+        context[IOPA.MessageId] = "disconnect";
        break;
   }
   
@@ -189,136 +191,136 @@ module.exports.defaultContext = function MQTTPacketClient_defaultContext(context
  * @private
  */
 function _parsePacket(packet, context) { 
-    context["server.IsRequest"] = true;
-    context["server.IsLocalOrigin"] = false;
+    context[SERVER.IsRequest] = true;
+    context[SERVER.IsLocalOrigin] = false;
   
     // PARSE PACKET
     var headers= {};
    
     headers["Content-Length"] = packet.length;
   
-    context["iopa.Headers"] = headers;
-    context["iopa.Path"] = packet.topic || "";
-    context["iopa.PathBase"] = "";
-    context["iopa.QueryString"] = "";
-    context["iopa.Method"] = packet.cmd.toUpperCase();
-    context["iopa.Protocol"] = "MQTT/3.1.1";
-    context["iopa.Body"] = iopaStream.EmptyStream;
-    context["iopa.StatusCode"] = 0;
+    context[IOPA.Headers] = headers;
+    context[IOPA.Path] = packet.topic || "";
+    context[IOPA.PathBase] = "";
+    context[IOPA.QueryString] = "";
+    context[IOPA.Method] = packet.cmd.toUpperCase();
+    context[IOPA.Protocol] = IOPA.PROTOCOLS.MQTT;
+    context[IOPA.Body] = iopaStream.EmptyStream;
+    context[IOPA.StatusCode] = 0;
          
-    if (context["server.TLS"])
-        context["iopa.Scheme"] = "mqtts";
+    if (context[SERVER.TLS])
+        context[IOPA.Scheme] = IOPA.SCHEMES.MQTTS;
     else
-        context["iopa.Scheme"] = "mqtt";
-
-    switch (context["iopa.Method"]) {
-           case "CONNECT":
-           context["mqtt.ProtocolId"] = packet.protocolId;
-           context["mqtt.ProtocolVersion"] = packet.protocolVersion;
-           context["mqtt.Clean"] = packet.clean;
-           context["mqtt.ClientID"] = packet.clientId;
-           context["mqtt.Keepalive"] = packet.keepalive;
-           context["mqtt.Username"] = packet.username;
-           context["mqtt.Password"] = packet.password;
-           context["mqtt.Will"] = packet.will;
-           context["iopa.MessageId"] = "connect";
+        context[IOPA.Scheme] = IOPA.SCHEMES.MQTT;
+   
+    switch (context[IOPA.Method]) {
+           case MQTT.METHODS.CONNECT:
+           context[MQTT.ProtocolId] = packet.protocolId;
+           context[MQTT.ProtocolVersion] = packet.protocolVersion;
+           context[MQTT.Clean] = packet.clean;
+           context[MQTT.ClientId] = packet.clientId;
+           context[MQTT.KeepAlive] = packet.keepalive;
+           context[MQTT.UserName] = packet.username;
+           context[MQTT.Password] = packet.password;
+           context[MQTT.Will] = packet.will;
+           context[IOPA.MessageId] = "connect";
            break;
-        case "SUBSCRIBE":
-           context["iopa.MessageId"] = packet.messageId;
-           context["mqtt.Subscriptions"] = packet.subscriptions;
+        case MQTT.METHODS.SUBSCRIBE:
+           context[IOPA.MessageId] = packet.messageId;
+           context[MQTT.Subscriptions] = packet.subscriptions;
           break;
-        case "UNSUBSCRIBE":
-           context["iopa.MessageId"] = packet.messageId;
-           context["mqtt.Unsubscriptions"] = packet.unsubscriptions;
+        case MQTT.METHODS.UNSUBSCRIBE:
+           context[IOPA.MessageId] = packet.messageId;
+           context[MQTT.Subscriptions] = packet.unsubscriptions;
           break; 
-        case "PUBLISH":
-           context["iopa.MessageId"] = packet.messageId;
-           context["mqtt.Qos"] = packet.qos;
-           context["mqtt.Dup"] =  packet.dup;
-           context["mqtt.Retain"] =  packet.retain;
-           context["iopa.Path"] = packet.topic;
-           context["iopa.Body"] = new iopaStream.BufferStream(packet.payload);
+        case MQTT.METHODS.PUBLISH:
+           context[IOPA.MessageId] = packet.messageId;
+           context[MQTT.Qos] = packet.qos;
+           context[MQTT.Dup] =  packet.dup;
+           context[MQTT.Retain] =  packet.retain;
+           context[IOPA.Path] = packet.topic;
+           context[IOPA.Body] = new iopaStream.BufferStream(packet.payload);
            break; 
-        case "PINGREQ":
-           context["iopa.MessageId"] = "ping";
+        case MQTT.METHODS.PINGREQ:
+           context[IOPA.MessageId] = "ping";
            break;
-        case "DISCONNECT":
-           context["iopa.MessageId"] = "disconnect";
+        case MQTT.METHODS.DISCONNECT:
+           context[IOPA.MessageId] = "disconnect";
            break; 
-         case "CONNACK":
-           context["iopa.StatusCode"] = packet.returnCode;
-           context["mqtt.SessionPresent"] = packet.sessionPresent;
-           context["iopa.MessageId"] = "connect";
+         case MQTT.METHODS.CONNACK:
+           context[IOPA.StatusCode] = packet.returnCode;
+           context[MQTT.SessionPresent] = packet.sessionPresent;
+           context[IOPA.MessageId] = "connect";
            break;
-         case "SUBACK":
-          context["iopa.MessageId"] = packet.messageId;
-          context["mqtt.Granted"] = packet.granted;
+         case MQTT.METHODS.SUBACK:
+          context[IOPA.MessageId] = packet.messageId;
+          context[MQTT.Granted] = packet.granted;
           break;
-        case "UNSUBACK":
-          context["iopa.MessageId"] = packet.messageId;
+        case MQTT.METHODS.UNSUBACK:
+          context[IOPA.MessageId] = packet.messageId;
           break; 
-        case "PUBACK":
-         context["iopa.MessageId"] = packet.messageId;
+        case MQTT.METHODS.PUBACK:
+         context[IOPA.MessageId] = packet.messageId;
              break; 
-        case "PUBREC":
-         context["iopa.MessageId"] = packet.messageId;
+        case MQTT.METHODS.PUBREC:
+         context[IOPA.MessageId] = packet.messageId;
             break; 
-        case "PUBREL":
-          context["iopa.MessageId"] = packet.messageId;
+        case MQTT.METHODS.PUBREL:
+          context[IOPA.MessageId] = packet.messageId;
             break; 
-       case "PUBCOMP":
-           context["iopa.MessageId"] = packet.messageId;
+       case MQTT.METHODS.PUBCOMP:
+           context[IOPA.MessageId] = packet.messageId;
          break; 
-        case "PINGRESP":
-           context["iopa.MessageId"] = "ping";
+        case MQTT.METHODS.PINGRESP:
+           context[IOPA.MessageId] = "ping";
            break;     
      }
      
-    context['iopa.ReasonPhrase'] = returnEnum[context["iopa.StatusCode"]];
+    context['iopa.ReasonPhrase'] = MQTT.RETURN_CODES[context[IOPA.StatusCode]];
      
     // SETUP RESPONSE DEFAULTS
     var response = context.response;
     
-    response["iopa.StatusCode"] = 0;
-    response["iopa.Headers"] = {};
-    response["iopa.Protocol"] = context["iopa.Protocol"];
-    response["iopa.MessageId"] = context["iopa.MessageId"];
+    response[IOPA.StatusCode] = 0;
+    response[IOPA.Headers] = {};
+    response[IOPA.Protocol] = context[IOPA.Protocol];
+    response[IOPA.MessageId] = context[IOPA.MessageId];
          
-     switch (context["iopa.Method"]) {
-           case "CONNECT":
-           response["iopa.Method"] = "CONNACK";
-           response["iopa.Body"] = new iopaStream.OutgoingNoPayloadStream();
-           response["iopa.StatusCode"] = 0;
-           response["mqtt.SessionPresent"] = false;
+     switch (context[IOPA.Method]) {
+           case MQTT.METHODS.CONNECT:
+           response[IOPA.Method] = MQTT.METHODS.CONNACK;
+           response[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
+           response[IOPA.StatusCode] = 0;
+           response[MQTT.SessionPresent] = false;
            break;
-        case "SUBSCRIBE":
-          response["iopa.Method"] = "SUBACK";
-          response["iopa.Body"] = new iopaStream.OutgoingMultiSendStream();
-          response["mqtt.Granted"] = [];
+        case MQTT.METHODS.SUBSCRIBE:
+          response[IOPA.Method] = MQTT.METHODS.SUBACK;
+          response[IOPA.Body] = new iopaStream.OutgoingMultiSendStream();
+          response[MQTT.Granted] = [];
           break;
-        case "UNSUBSCRIBE":
-           response["iopa.Method"] = "UNSUBACK";
-           response["iopa.Body"] = new iopaStream.OutgoingNoPayloadStream();
+        case MQTT.METHODS.UNSUBSCRIBE:
+           response[IOPA.Method] = MQTT.METHODS.UNSUBACK;
+           response[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
            break; 
-        case "PUBLISH":
-           response["iopa.Method"] = "PUBACK";
-           response["iopa.Body"] = new iopaStream.OutgoingNoPayloadStream();
+        case MQTT.METHODS.PUBLISH:
+           response[IOPA.Method] = MQTT.METHODS.PUBACK;
+           response[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
            break; 
-        case "PINGREQ":
-           response["iopa.Method"] = "PINGRESP";
-           response["iopa.Body"] = new iopaStream.OutgoingNoPayloadStream();
+        case MQTT.METHODS.PINGREQ:
+           response[IOPA.Method] = MQTT.METHODS.PINGRESP;
+           response[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
            break;
-        case "DISCONNECT":
-            response["iopa.Method"] = null;
-            response["iopa.Body"] = undefined;
+        case MQTT.METHODS.DISCONNECT:
+            response[IOPA.Method] = null;
+            response[IOPA.Body] = undefined;
         break;
      }
-     response['iopa.ReasonPhrase'] = returnEnum[response["iopa.StatusCode"]];
+     response[IOPA.ReasonPhrase] = MQTT.RETURN_CODES[response[IOPA.StatusCode]];
            
-    if (response["iopa.Body"])
+    if (response[IOPA.Body])
     {
-      response["iopa.Body"].on("finish", _mqttSendResponse.bind(this, context));
-      response["iopa.Body"].on("data", _mqttSendResponse.bind(this, context));
+      response[IOPA.Body].on("finish", _mqttSendResponse.bind(this, context));
+      response[IOPA.Body].on("data", _mqttSendResponse.bind(this, context));
     }
 }
 
@@ -334,42 +336,42 @@ function _parsePacket(packet, context) {
 function _mqttSendResponse(context, payload) { 
     var response = context.response;
      
-        if (!response["iopa.MessageId"])
-          response["iopa.MessageId"] = _nextMessageId();
+        if (!response[IOPA.MessageId])
+          response[IOPA.MessageId] = _nextMessageId();
     
-     var  packet = { cmd: response["iopa.Method"].toLowerCase() };
+     var  packet = { cmd: response[IOPA.Method].toLowerCase() };
    
-     switch (response["iopa.Method"]) {
-      case "CONNACK":
-         packet.returnCode = response["iopa.StatusCode"];
-         response['iopa.ReasonPhrase'] = returnEnum[response["iopa.StatusCode"]];
-         packet.sessionPresent = response["mqtt.SessionPresent"];
+     switch (response[IOPA.Method]) {
+      case MQTT.METHODS.CONNACK:
+         packet.returnCode = response[IOPA.StatusCode];
+         response[IOPA.ReasonPhrase] = MQTT.RETURN_CODES[response[IOPA.StatusCode]];
+         packet.sessionPresent = response[MQTT.SessionPresent];
          break;
-      case "SUBACK":
-         packet.messageId = response["iopa.MessageId"];
-         packet.granted = response["mqtt.Granted"];
+      case MQTT.METHODS.SUBACK:
+         packet.messageId = response[IOPA.MessageId];
+         packet.granted = response[MQTT.Granted];
         break;
-      case "UNSUBACK":
-         packet.messageId = response["iopa.MessageId"];
+      case MQTT.METHODS.UNSUBACK:
+         packet.messageId = response[IOPA.MessageId];
         break; 
-      case "PUBACK":
-         packet.messageId = response["iopa.MessageId"];
+      case MQTT.METHODS.PUBACK:
+         packet.messageId = response[IOPA.MessageId];
           break; 
-      case "PUBREC":
-         packet.messageId = response["iopa.MessageId"];
+      case MQTT.METHODS.PUBREC:
+         packet.messageId = response[IOPA.MessageId];
           break; 
-      case "PUBREL":
-         packet.messageId = response["iopa.MessageId"];
+      case MQTT.METHODS.PUBREL:
+         packet.messageId = response[IOPA.MessageId];
           break; 
-     case "PUBCOMP":
-         packet.messageId = response["iopa.MessageId"];
+     case MQTT.METHODS.PUBCOMP:
+         packet.messageId = response[IOPA.MessageId];
         break; 
-      case "PINGRESP":
+      case MQTT.METHODS.PINGRESP:
          break;
      }
      
      var buf = MqttPacket.generate(packet);
-     response["server.RawStream"].write(buf);
+     response[SERVER.RawStream].write(buf);
 }
 
 /**
@@ -398,18 +400,7 @@ function _onClose(ctx) {
         iopaContextFactory.dispose(ctx);
     }, 1000);
     
-   if (ctx["server.InProcess"])
-     ctx["iopa.CallCancelledSource"].cancel('Client Socket Disconnected');
-   
- // ctx["server.ChannelContext"]["server.RawComplete"]();
-};
+   if (ctx[SERVER.InProcess])
+     ctx[SERVER.CallCancelledSource].cancel('Client Socket Disconnected');
 
-var returnEnum =
-{
-  0: 'OK',
-  1: 'Unacceptable protocol version',
-  2: 'Identifier rejected',
- 3: 'Server unavailable',
- 4: 'Bad user name or password',
- 5: 'Not authorized',
 };

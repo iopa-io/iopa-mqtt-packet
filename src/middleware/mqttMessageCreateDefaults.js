@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +14,15 @@
  * limitations under the License.
  */
 
-var Promise = require('bluebird')
-    , util = require('util')
+var  util = require('util')
     , MqttFormat = require('../common/mqttFormat.js')
   
+  const MQTT = require('../common/constants.js').MQTT
+        
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER
+    
   /**
  * MQTT IOPA Middleware for Client Connection Defaults
  *
@@ -28,30 +32,31 @@ var Promise = require('bluebird')
  * @public
  */
 function MQTTMessageCreateDefaults(app) {
-      app.properties["server.Capabilities"]["iopa-mqtt.Version"] = "1.2";
-      app.properties["server.Capabilities"]["iopa-mqtt.Support"] = {
+      app.properties[SERVER.Capabilities]["iopa-mqtt.Version"] = "1.2";
+      app.properties[SERVER.Capabilities]["iopa-mqtt.Support"] = {
         "mqtt.Version": "3.1.1"
       };
  }
 
 MQTTMessageCreateDefaults.prototype.invoke = function MQTTMessageCreateDefaults_invoke(context, next){
-     context["server.CreateRequest"] = MQTTMessageCreateDefaults_createRequest.bind(this, context["iopa.Seq"], context["server.CreateRequest"]);
+     context[SERVER.Fetch] = MQTTMessageCreateDefaults_fetch.bind(this, context[IOPA.Seq], context[SERVER.Fetch]);
      return next();
 };
 
  /**
  * MQTT IOPA Middleware for Client Message Request Defaults
  *
- * @method MQTTMessageCreateDefaults_createRequest
+ * @method fetch
  * @parm {string} path url representation of ://127.0.0.1/hello
  * @parm {string} [method]  request method (e.g. 'GET')
  * @returns context
  * @public
  */
-function MQTTMessageCreateDefaults_createRequest(id, nextFactory, urlStr, method){
-    var context = nextFactory(urlStr, method);
-      MqttFormat.defaultContext(context);
-     return context;
+function MQTTMessageCreateDefaults_fetch(id, nextFetch, urlStr, options, pipeline){
+    return nextFetch(urlStr, options, function(context){
+           MqttFormat.defaultContext(context);
+           return pipeline(context);
+    });
 };
 
 module.exports = MQTTMessageCreateDefaults;

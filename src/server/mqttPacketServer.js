@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +15,9 @@
  */
  
 const util = require('util')
-    , Promise = require('bluebird');
-
+   
 const iopa = require('iopa')
-    , TcpServer = require('iopa-tcp')
+    , tcp = require('iopa-tcp')
     , IopaServer = require('iopa-server')
     
 const MQTTServerChannelParser = require('../middleware/mqttServerChannelParser.js')
@@ -30,11 +28,19 @@ const MQTTServerChannelParser = require('../middleware/mqttServerChannelParser.j
 const iopaClientSend = require('iopa-common-middleware').ClientSend
     , iopaMessageCache = require('iopa-common-middleware').Cache;
 
-
+const MQTT = require('../common/constants.js').MQTT
+        
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER,
+    APPBUILDER = constants.APPBUILDER
 
 /* *********************************************************
  * IOPA MQTT SERVER / CLIENT WITH MIDDLEWARE CONSTRUCTED
  * ********************************************************* */
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 
 /**
  * MQTT IOPA Server includes MQTT Client
@@ -44,19 +50,14 @@ const iopaClientSend = require('iopa-common-middleware').ClientSend
  * @param {appFunc} appFunc  Server callback in IOPA AppFunc format
  * @constructor
  */
-function MQTTPacketServer(options, appFuncServer, appFuncClient) {
-  if (!(this instanceof MQTTPacketServer))
-    return new MQTTPacketServer(options, appFuncServer, appFuncClient);
+function MQTTPacketServer(options, appFuncServer) {
+  _classCallCheck(this, MQTTPacketServer);
     
   if (typeof options === 'function') {
-     appFuncClient = appFuncServer;
-    appFuncServer = options;
+     appFuncServer = options;
     options = {};
   }
   
-   this._appFuncClient = appFuncClient;
-
-    
     /**
     * Call Parent Constructor to ensure the following are created
     *   this.serverPipeline
@@ -65,7 +66,7 @@ function MQTTPacketServer(options, appFuncServer, appFuncClient) {
    IopaServer.call(this, options, appFuncServer);
         
    // INIT TCP SERVER
-  this._tcp = new TcpServer(options, this.serverPipeline, this.clientPipeline);
+  this._tcp = tcp.createServer(options, this.serverChannelPipeline);
 }
 
 util.inherits(MQTTPacketServer, IopaServer);
@@ -76,6 +77,7 @@ util.inherits(MQTTPacketServer, IopaServer);
  * @InheritDoc
  */
 MQTTPacketServer.prototype._serverChannelPipelineSetup = function (serverChannelApp) {
+   serverChannelApp.use(iopaClientSend);
    serverChannelApp.use(MQTTMessageCreateDefaults);
    serverChannelApp.use(MQTTServerChannelParser);
  };
@@ -85,8 +87,8 @@ MQTTPacketServer.prototype._serverChannelPipelineSetup = function (serverChannel
  * @InheritDoc
  */
 MQTTPacketServer.prototype._serverMessagePipelineSetup = function (app) {
-    app.properties["server.Capabilities"]["iopa-mqtt.Version"] = "1.2";
-    app.properties["server.Capabilities"]["iopa-mqtt.Support"] = {
+    app.properties[SERVER.Capabilities]["iopa-mqtt.Version"] = "1.2";
+    app.properties[SERVER.Capabilities]["iopa-mqtt.Support"] = {
       "mqtt.Version": "3.1.1"
       };
      app.use(MQTTMessageCreateDefaults);  
@@ -104,7 +106,6 @@ MQTTPacketServer.prototype._clientConnectPipelineSetup = function (clientConnect
   clientConnectApp.use(MQTTClientChannelParser);
   clientConnectApp.use(iopaClientSend);
   clientConnectApp.use(iopaMessageCache.Match);
-  clientConnectApp.use(iopaMessageLogger);
 };
 
 /**
@@ -116,24 +117,9 @@ MQTTPacketServer.prototype._clientMessageSendPipelineSetup = function (clientMes
   clientMessageApp.properties["server.Capabilities"]["iopa-mqtt.Support"] = {
     "mqtt.Version": "3.1.1"
   };
-  clientMessageApp.properties["app.DefaultApp"] = MQTTClientPacketSend;
+  clientMessageApp.properties[APPBUILDER.DefaultApp] = MQTTClientPacketSend;
   clientMessageApp.use(iopaMessageCache.Cache);
 };
-
-/**
- * CLIENT MESSAGE PIPELINE INVOKE
- * Middleware Called on Each Outbound Client Message Request
- * 
- * @method _clientSendInvoke
- * @this MQTTPacketServer MQTTPacketServer instance
- * @param context IOPA context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
- * @protected
- */
-MQTTPacketServer.prototype._clientSendInvoke = function MQTTPacketServer_clientSendInvoke(context, next) {
-      // Call External AppFunc
-   return this._appFuncClient(context).then(next);
- };
 
 // OVERRIDE METHODS
 
