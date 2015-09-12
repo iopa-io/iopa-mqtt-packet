@@ -16,4 +16,3 @@
 
 var Server = require('./src/server/mqttPacketServer.js');
 module.exports.createServer = function(options, appFunc) {return new Server(options, appFunc)};
-

@@ -16,12 +16,11 @@
 
 var util = require('util')
     , MqttFormat = require('../common/mqttFormat.js')
-    
-const MQTT = require('../common/constants.js').MQTT
-        
+          
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER
+    SERVER = constants.SERVER,
+    MQTT = constants.MQTT
   
 /**
  * Parses IOPA request into MQTT packet

@@ -18,11 +18,10 @@
     , iopaStream = require('iopa-common-stream')
     , iopaContextFactory = require('iopa').factory
     
-const MQTT = require('./constants.js').MQTT
-    
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER
+    SERVER = constants.SERVER,
+    MQTT = constants.MQTT
     
 // SETUP REQUEST DEFAULTS 
 const maxMessageId   = Math.pow(2, 16);

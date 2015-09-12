@@ -28,12 +28,11 @@ const MQTTServerChannelParser = require('../middleware/mqttServerChannelParser.j
 const iopaClientSend = require('iopa-common-middleware').ClientSend
     , iopaMessageCache = require('iopa-common-middleware').Cache;
 
-const MQTT = require('../common/constants.js').MQTT
-        
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER,
-    APPBUILDER = constants.APPBUILDER
+    APPBUILDER = constants.APPBUILDER,
+    MQTT = constants.MQTT
 
 /* *********************************************************
  * IOPA MQTT SERVER / CLIENT WITH MIDDLEWARE CONSTRUCTED
