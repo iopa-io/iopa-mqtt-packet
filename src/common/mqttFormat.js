@@ -89,34 +89,64 @@ module.exports.sendRequest = function mqttFormat_SendRequest(context) {
   */
 module.exports.inboundParseMonitor = function ResponseParser(parentContext, eventType) {
      var parser  = MqttPacket.parser();
+     var parentResponse = parentContext.response;
       
       parser.on('packet', _invokePacket);
       parser.on('error', _error.bind(parentContext));
     
-      parentContext[SERVER.RawStream].on('data', function(chunk) {
-          parser.parse(chunk);
-      });
-      
+    
+      if (eventType == IOPA.EVENTS.Response)
+      {
+          parentResponse[SERVER.RawStream].on('data', function(chunk) {
+              parser.parse(chunk);
+          });
+      } else
+      {
+         parentContext[SERVER.RawStream].on('data', function(chunk) {
+              parser.parse(chunk);
+          });
+      }
+          
       var that = this;
        
       function _invokePacket(packet) {
-        var context = iopaContextFactory.createContext();
-        context[SERVER.TLS] = parentContext[SERVER.TLS];
-        context[SERVER.RemoteAddress] = parentContext[SERVER.RemoteAddress];
-        context[SERVER.RemotePort] = parentContext[SERVER.RemotePort] ;
-        context[SERVER.LocalAddress] = parentContext[SERVER.LocalAddress];
-        context[SERVER.LocalPort] = parentContext[SERVER.LocalPort]; 
-        context[SERVER.RawStream] = parentContext[SERVER.RawStream];
-        context.response[SERVER.TLS] = context[SERVER.TLS];
-        context.response[SERVER.RemoteAddress] = context[SERVER.RemoteAddress];
-        context.response[SERVER.RemotePort] = context[SERVER.RemotePort] ;
-        context.response[SERVER.LocalAddress] = context[SERVER.LocalAddress];
-        context.response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
-        context.response[SERVER.RawStream] = context[SERVER.RawStream];    
-        context[SERVER.Logger] = parentContext[SERVER.Logger];
         
+        var context = iopaContextFactory.createContext();
+        var response = context.response;
+        
+        context[SERVER.TLS] = parentContext[SERVER.TLS];
+        response[SERVER.TLS] = parentResponse[SERVER.TLS];
+   
+        if (eventType == IOPA.EVENTS.Response)
+        {
+          context[SERVER.RemoteAddress] = parentResponse[SERVER.RemoteAddress];
+          context[SERVER.RemotePort] = parentResponse[SERVER.RemotePort] ;
+          context[SERVER.LocalAddress] = parentResponse[SERVER.LocalAddress];
+          context[SERVER.LocalPort] = parentResponse[SERVER.LocalPort]; 
+          context[SERVER.RawStream] = parentResponse[SERVER.RawStream];
+          response[SERVER.RawStream] = parentContext[SERVER.RawStream];
+        } else
+        {
+          context[SERVER.RemoteAddress] = parentContext[SERVER.RemoteAddress];
+          context[SERVER.RemotePort] = parentContext[SERVER.RemotePort] ;
+          context[SERVER.LocalAddress] = parentContext[SERVER.LocalAddress];
+          context[SERVER.LocalPort] = parentContext[SERVER.LocalPort]; 
+          context[SERVER.RawStream] = parentContext[SERVER.RawStream];
+          response[SERVER.RawStream] = parentResponse[SERVER.RawStream];
+        }
+        
+        context[SERVER.Logger] = parentContext[SERVER.Logger];
         context[SERVER.ParentContext] = parentContext;
+       
+        response[SERVER.RemoteAddress] = context[SERVER.RemoteAddress];
+        response[SERVER.RemotePort] = context[SERVER.RemotePort] ;
+        response[SERVER.LocalAddress] = context[SERVER.LocalAddress];
+        response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
+        response[SERVER.Logger] = context[SERVER.Logger];
+        response[SERVER.ParentContext] = parentResponse;
+           
         context[SERVER.Fetch] = parentContext[SERVER.Fetch];
+        
         _parsePacket(packet, context);
         parentContext[IOPA.Events].emit(eventType, context);
         
