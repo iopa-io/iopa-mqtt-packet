@@ -23,7 +23,7 @@ const constants = require('iopa').constants,
     
 const THISMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt:clientchannel"},
       MQTTMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt"},
-       packageVersion = require('../../package.json').version;
+      packageVersion = require('../../package.json').version;
   
   /**
  * MQTT IOPA Middleware for Client Connection Defaults

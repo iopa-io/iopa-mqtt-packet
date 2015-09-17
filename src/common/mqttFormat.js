@@ -111,11 +111,11 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
       var that = this;
        
       function _invokePacket(packet) {
-        
+    //    console.log(util.inspect(packet));
         var context = parentContext[SERVER.Factory].createContext();
-        context[SERVER.Capabilities] = parentContext[SERVER.Capabilities];
-        context[SERVER.ParentContext] = parentContext;
-        context[SERVER.SessionId] = parentResponse[SERVER.SessionId];
+        parentContext[SERVER.Factory].mergeCapabilities(context, parentContext);
+
+         context[SERVER.SessionId] = parentResponse[SERVER.SessionId];
         
         var response = context.response;
         
@@ -150,7 +150,6 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
         response[SERVER.RemotePort] = context[SERVER.RemotePort] ;
         response[SERVER.LocalAddress] = context[SERVER.LocalAddress];
         response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
-        response[SERVER.ParentContext] = parentResponse;
            
         context[SERVER.Fetch] = parentContext[SERVER.Fetch];
         
