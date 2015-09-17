@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+global.Promise = require('bluebird');
+
 const iopa = require('iopa')
     , mqtt = require('./index.js')      
     , util = require('util')
-    , iopaStream = require('iopa-common-stream');
-
-const iopaMessageLogger = require('iopa-common-middleware').MessageLogger
+  
+const iopaMessageLogger = require('iopa-logger').MessageLogger
 
 var sessionContextDemo;
 
@@ -51,7 +52,7 @@ var serverOptions = {
 };
                   
 var server = mqtt.createServer(serverOptions, appServer.build());
-server.connectuse(iopaMessageLogger.connect);
+server.connectuse(iopaMessageLogger);
 
 if (!process.env.PORT)
   process.env.PORT = 1883;
@@ -82,6 +83,7 @@ server.listen(process.env.PORT, process.env.IP)
        server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
        sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
              // no PUBACK Responses so no  promise then here
-       setTimeout(function(){server.close()}, 2000);
+       setTimeout(function(){
+         server.close()}, 2000);
     })
     .catch(function(err){ console.log(err);  throw err;});

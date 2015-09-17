@@ -31,17 +31,15 @@ const constants = require('iopa').constants,
  */
 module.exports = function MQTTClientPacketSend(context) {    
     try {
-        // send the request
         MqttFormat.sendRequest(context);
     }
     catch (err) {
-        context[SERVER.Logger].error("[MQTTCLIENTPACKETSEND] Unable to send MQTT packet " 
+        context[SERVER.Logger].error("[MQTT-CLIENTPACKETSEND] Unable to send MQTT packet " 
             + context[IOPA.Method] + ": " + err);
         context =null;
-        return Promise.reject('Unable to parse IOPA Message into MQTT packet');
+        return new Promise(function(resolve, reject){reject('Unable to parse IOPA Message into MQTT packet');});
     }
   
-   // hook into response event
       return new Promise(function(resolve, reject){
          context[IOPA.Events].on(IOPA.EVENTS.Response, MQTTClientPacket_Response.bind(this, context, resolve));
      });

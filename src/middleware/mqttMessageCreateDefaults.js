@@ -23,6 +23,10 @@ const constants = require('iopa').constants,
     SERVER = constants.SERVER,
     MQTT = constants.MQTT
     
+const MQTTMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt", PROTOCOLVERSION: "OASIS 3.1.1"},
+    packageVersion = require('../../package.json').version;
+
+    
   /**
  * MQTT IOPA Middleware for Client Connection Defaults
  *
@@ -32,10 +36,9 @@ const constants = require('iopa').constants,
  * @public
  */
 function MQTTMessageCreateDefaults(app) {
-      app.properties[SERVER.Capabilities]["iopa-mqtt.Version"] = "1.2";
-      app.properties[SERVER.Capabilities]["iopa-mqtt.Support"] = {
-        "mqtt.Version": "3.1.1"
-      };
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][IOPA.Protocol] = MQTTMIDDLEWARE.PROTOCOLVERSION;
  }
 
 MQTTMessageCreateDefaults.prototype.invoke = function MQTTMessageCreateDefaults_invoke(context, next){
@@ -47,10 +50,7 @@ MQTTMessageCreateDefaults.prototype.invoke = function MQTTMessageCreateDefaults_
  * MQTT IOPA Middleware for Client Message Request Defaults
  *
  * @method fetch
- * @parm {string} path url representation of ://127.0.0.1/hello
- * @parm {string} [method]  request method (e.g. 'GET')
- * @returns context
- * @public
+ * @private
  */
 function MQTTMessageCreateDefaults_fetch(id, nextFetch, urlStr, options, pipeline){
     return nextFetch(urlStr, options, function(context){

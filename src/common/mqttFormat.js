@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- var MqttPacket = require('mqtt-packet')
-    , util = require('util')
-    , iopaStream = require('iopa-common-stream')
-    , iopaContextFactory = require('iopa').factory
-    
-const constants = require('iopa').constants,
-    IOPA = constants.IOPA,
-    SERVER = constants.SERVER,
-    MQTT = constants.MQTT
+
+// DEPENDENCIES
+
+const MqttPacket = require('mqtt-packet'),
+  util = require('util'),
+  iopaStream = require('iopa-common-stream'),
+  
+  constants = require('iopa').constants,
+  IOPA = constants.IOPA,
+  SERVER = constants.SERVER,
+  MQTT = constants.MQTT;
     
 // SETUP REQUEST DEFAULTS 
 const maxMessageId   = Math.pow(2, 16);
@@ -93,8 +95,7 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
       
       parser.on('packet', _invokePacket);
       parser.on('error', _error.bind(parentContext));
-    
-    
+     
       if (eventType == IOPA.EVENTS.Response)
       {
           parentResponse[SERVER.RawStream].on('data', function(chunk) {
@@ -111,14 +112,20 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
        
       function _invokePacket(packet) {
         
-        var context = iopaContextFactory.createContext();
+        var context = parentContext[SERVER.Factory].createContext();
+        context[SERVER.Capabilities] = parentContext[SERVER.Capabilities];
+        context[SERVER.ParentContext] = parentContext;
+        context[SERVER.SessionId] = parentResponse[SERVER.SessionId];
+        
         var response = context.response;
         
         context[SERVER.TLS] = parentContext[SERVER.TLS];
-        response[SERVER.TLS] = parentResponse[SERVER.TLS];
-   
+        
         if (eventType == IOPA.EVENTS.Response)
         {
+          context[SERVER.IsRequest] = false;
+          context[SERVER.IsLocalOrigin] = false;
+  
           context[SERVER.RemoteAddress] = parentResponse[SERVER.RemoteAddress];
           context[SERVER.RemotePort] = parentResponse[SERVER.RemotePort] ;
           context[SERVER.LocalAddress] = parentResponse[SERVER.LocalAddress];
@@ -127,6 +134,9 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
           response[SERVER.RawStream] = parentContext[SERVER.RawStream];
         } else
         {
+          context[SERVER.IsRequest] = true;
+          context[SERVER.IsLocalOrigin] = false;
+  
           context[SERVER.RemoteAddress] = parentContext[SERVER.RemoteAddress];
           context[SERVER.RemotePort] = parentContext[SERVER.RemotePort] ;
           context[SERVER.LocalAddress] = parentContext[SERVER.LocalAddress];
@@ -134,22 +144,22 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
           context[SERVER.RawStream] = parentContext[SERVER.RawStream];
           response[SERVER.RawStream] = parentResponse[SERVER.RawStream];
         }
-        
-        context[SERVER.Logger] = parentContext[SERVER.Logger];
-        context[SERVER.ParentContext] = parentContext;
-       
+      
+        response[SERVER.TLS] = context[SERVER.TLS];
         response[SERVER.RemoteAddress] = context[SERVER.RemoteAddress];
         response[SERVER.RemotePort] = context[SERVER.RemotePort] ;
         response[SERVER.LocalAddress] = context[SERVER.LocalAddress];
         response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
-        response[SERVER.Logger] = context[SERVER.Logger];
         response[SERVER.ParentContext] = parentResponse;
            
         context[SERVER.Fetch] = parentContext[SERVER.Fetch];
         
         _parsePacket(packet, context);
         parentContext[IOPA.Events].emit(eventType, context);
-        
+     
+         if (eventType == IOPA.EVENTS.Response)
+            setTimeout(context.dispose, 50);
+     
         that = null;
         context = null;
       }
@@ -220,9 +230,7 @@ module.exports.defaultContext = function MQTTPacketClient_defaultContext(context
  * @private
  */
 function _parsePacket(packet, context) { 
-    context[SERVER.IsRequest] = true;
-    context[SERVER.IsLocalOrigin] = false;
-  
+    
     // PARSE PACKET
     var headers= {};
    
@@ -305,7 +313,7 @@ function _parsePacket(packet, context) {
            break;     
      }
      
-    context['iopa.ReasonPhrase'] = MQTT.RETURN_CODES[context[IOPA.StatusCode]];
+    context[IOPA.ReasonPhrase] = MQTT.RETURN_CODES[context[IOPA.StatusCode]];
      
     // SETUP RESPONSE DEFAULTS
     var response = context.response;
@@ -414,22 +422,4 @@ function _mqttSendResponse(context, payload) {
     _lastMessageId = 1;
 
   return _lastMessageId;
-};
-
-/**
- * Helper to Close Incoming MQTT Packet
- * 
- * @method _onClose
- * @object packet MQTT Raw Packet
- * @object ctx IOPA context dictionary
- * @private
- */
-function _onClose(ctx) {
-    setTimeout(function() {
-        iopaContextFactory.dispose(ctx);
-    }, 1000);
-    
-   if (ctx[SERVER.InProcess])
-     ctx[SERVER.CallCancelledSource].cancel('Client Socket Disconnected');
-
 };

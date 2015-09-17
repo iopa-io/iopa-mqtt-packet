@@ -23,6 +23,10 @@ const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER,
     MQTT = constants.MQTT
+    
+const THISMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt:serverchannel", SESSIONCLOSE: "serverchannel.SessionClose"},
+       MQTTMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt", PROTOCOLVERSION: "OASIS 3.1.1"},
+       packageVersion = require('../../package.json').version;
   
 /**
  * IOPA Middleware: Translates IOPA Stream Connections to IOPA Multi-Packet Connection 
@@ -32,10 +36,12 @@ const constants = require('iopa').constants,
  * @constructor
  */
 function MQTTServerChannelParser(app) {
-    app.properties[SERVER.Capabilities]["iopa-mqtt.Version"] = "1.2";
-    app.properties[SERVER.Capabilities]["iopa-mqtt.Support"] = {
-        "mqtt.Version": "3.1.1"
-    };
+  app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][IOPA.Protocol] = MQTTMIDDLEWARE.PROTOCOLVERSION;
+    
+    app.properties[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 /**
@@ -46,17 +52,17 @@ function MQTTServerChannelParser(app) {
 MQTTServerChannelParser.prototype.invoke = function MQTTServerChannelParser_invoke(channelContext, next) {
     channelContext[IOPA.Scheme] = IOPA.SCHEMES.MQTT;
     
+     var p = new Promise(function(resolve, reject){
+        channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE] = resolve;
+    }); 
+    
     channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, function(){
-        channelContext["MQTTServerChannelParser.SessionClose"]();
-   });
+        channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE]();
+    });
  
     MqttFormat.inboundParseMonitor(channelContext, IOPA.EVENTS.Request);
     
-    return next().then(function(){ return new Promise(function(resolve, reject){
-           channelContext["MQTTServerChannelParser.SessionClose"] = resolve;
-           channelContext["MQTTServerChannelParser.SessionError"] = reject;
-        }); 
-    });
+    return next().then(function(){ return p });
 };
 
 module.exports = MQTTServerChannelParser;

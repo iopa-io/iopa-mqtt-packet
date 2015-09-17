@@ -1,7 +1,7 @@
 {
   "name": "iopa-mqtt-packet",
   "main": "index.js",
-  "description": "Lightweight Message Queuing Telemetry Transport (MQTT) packet transport, based on the Internet of Protocols Alliance (IOPA) specification ",
+  "description": "API-first OASIS Message Queuing Telemetry Transport (MQTT) packet transport for the Internet of Things (IoT), based on the Internet of Protocols Alliance (IOPA) specification",
   "author": "iopa <build@iopa.io>",
   "license": "Apache-2.0",
   "maintainers": [
@@ -10,22 +10,23 @@
       "email": "build@iopa.io"
     }
   ],
-  "version": "0.2.24",
+  "version": "1.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/iopa-io/iopa-mqtt-packet.git"
   },
   "dependencies": {
-    "iopa": "latest",
-    "iopa-server": "latest",
-    "iopa-common-middleware": "latest",
-    "iopa-common-stream": "latest",
-    "iopa-tcp": "latest",
+    "iopa": "^1.2.0",
+    "iopa-server": "^1.2.0",
+    "iopa-common-middleware": "^1.2.0",
+    "iopa-common-stream": "^1.2.0",
+    "iopa-tcp": "^1.2.0",
     "mqtt-packet": "~3.2.0"
   },
   "keywords": [
     "limerun",
     "iopa",
+    "iot",
     "owin",
     "middleware",
     "node-mqtt",
@@ -46,8 +47,10 @@
     "typings": "tsd reinstall --overwrite --clean --config tools/tsd.json && tsd link"
   },
   "devDependencies": {
-    "mocha": "latest",
-    "mocha-junit-reporter": "latest",
-    "should": "latest"
+    "bl": "^1.0.0",
+    "mocha": "^2.3.2",
+    "mocha-junit-reporter": "^1.6.1",
+    "should": "^7.1.0",
+    "iopa-logger": "^1.2.0"
   }
 }

@@ -79,6 +79,7 @@ MQTTPacketServer.prototype._serverChannelPipelineSetup = function (serverChannel
    serverChannelApp.use(iopaClientSend);
    serverChannelApp.use(MQTTMessageCreateDefaults);
    serverChannelApp.use(MQTTServerChannelParser);
+    serverChannelApp.use(iopaMessageCache.Match);
  };
 
 /**
@@ -86,11 +87,8 @@ MQTTPacketServer.prototype._serverChannelPipelineSetup = function (serverChannel
  * @InheritDoc
  */
 MQTTPacketServer.prototype._serverMessagePipelineSetup = function (app) {
-    app.properties[SERVER.Capabilities]["iopa-mqtt.Version"] = "1.2";
-    app.properties[SERVER.Capabilities]["iopa-mqtt.Support"] = {
-      "mqtt.Version": "3.1.1"
-      };
-     app.use(MQTTMessageCreateDefaults);  
+   app.use(MQTTMessageCreateDefaults);  
+   app.use(iopaMessageCache.Cache);
 };
 
 
@@ -116,8 +114,8 @@ MQTTPacketServer.prototype._clientMessageSendPipelineSetup = function (clientMes
   clientMessageApp.properties["server.Capabilities"]["iopa-mqtt.Support"] = {
     "mqtt.Version": "3.1.1"
   };
-  clientMessageApp.properties[APPBUILDER.DefaultApp] = MQTTClientPacketSend;
   clientMessageApp.use(iopaMessageCache.Cache);
+  clientMessageApp.properties[APPBUILDER.DefaultApp] = MQTTClientPacketSend;
 };
 
 // OVERRIDE METHODS

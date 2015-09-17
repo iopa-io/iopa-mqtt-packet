@@ -20,6 +20,10 @@ var  util = require('util')
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
+    
+const THISMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt:clientchannel"},
+      MQTTMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt"},
+       packageVersion = require('../../package.json').version;
   
   /**
  * MQTT IOPA Middleware for Client Connection Defaults
@@ -30,10 +34,11 @@ const constants = require('iopa').constants,
  * @public
  */
 function MQTTClientChannelParser(app) {
-    if (!app.properties[SERVER.Capabilities]["iopa-mqtt.Version"])
-        throw ("Missing Dependency: MQTT Server/Middleware in Pipeline");
-
-   app.properties[SERVER.Capabilities]["MQTTClientChannelParser.Version"] = "1.0";
+  if (!app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY])
+        throw ("Missing Dependency: IOPA MQTT Server/Middleware in Pipeline");
+     
+    app.properties[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 MQTTClientChannelParser.prototype.invoke = function MQTTClientChannelParser_invoke(channelContext, next){

@@ -7,7 +7,7 @@
 [![NPM](https://nodei.co/npm/iopa-mqtt-packet.png?downloads=true)](https://nodei.co/npm/iopa-mqtt-packet/)
 
 ## About
-`iopa-mqtt-packet` is a standards-based OASIS Message Queuing Telemetry Transport (MQTT) packet transport, based on the Internet of Protocols Alliance (IOPA) open specification  
+`iopa-mqtt-packet` is an API-first OASIS Message Queuing Telemetry Transport (MQTT) packet transport for the Internet of Things (IoT), based on the Internet of Protocols Alliance (IOPA) specification  
 
 It servers MQTT messages in standard IOPA format.
 
