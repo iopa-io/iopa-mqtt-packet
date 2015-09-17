@@ -157,8 +157,8 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
         _parsePacket(packet, context);
         parentContext[IOPA.Events].emit(eventType, context);
      
-         if (eventType == IOPA.EVENTS.Response)
-            setTimeout(context.dispose, 50);
+        if (eventType == IOPA.EVENTS.Response)
+           setTimeout(context.dispose, 50);
      
         that = null;
         context = null;
