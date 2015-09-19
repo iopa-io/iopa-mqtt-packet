@@ -41,7 +41,7 @@ function MQTTClientChannelParser(app) {
     app.properties[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
-MQTTClientChannelParser.prototype.invoke = function MQTTClientChannelParser_invoke(channelContext, next){
+MQTTClientChannelParser.prototype.connect = function MQTTClientChannelParser_connect(channelContext, next){
      MqttFormat.inboundParseMonitor(channelContext, IOPA.EVENTS.Response);
      return next();
 };

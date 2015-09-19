@@ -36,7 +36,7 @@ const THISMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt:serverchannel", SESSIONCLO
  * @constructor
  */
 function MQTTServerChannelParser(app) {
-  app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY] = {};
     app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
     app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][IOPA.Protocol] = MQTTMIDDLEWARE.PROTOCOLVERSION;
     
@@ -49,18 +49,22 @@ function MQTTServerChannelParser(app) {
  * @this context IOPA channelContext dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MQTTServerChannelParser.prototype.invoke = function MQTTServerChannelParser_invoke(channelContext, next) {
+MQTTServerChannelParser.prototype.channel = function MQTTServerChannelParser_channel(channelContext, next) {
     channelContext[IOPA.Scheme] = IOPA.SCHEMES.MQTT;
     
-     var p = new Promise(function(resolve, reject){
+    var p = new Promise(function(resolve, reject){
         channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE] = resolve;
     }); 
     
     channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, function(){
         channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE]();
     });
- 
-    MqttFormat.inboundParseMonitor(channelContext, IOPA.EVENTS.Request);
+    
+    channelContext[IOPA.Events].on(IOPA.EVENTS.Request, function(context){
+         context.using(next.invoke);
+     })
+  
+     MqttFormat.inboundParseMonitor(channelContext, IOPA.EVENTS.Request);
     
     return next().then(function(){ return p });
 };

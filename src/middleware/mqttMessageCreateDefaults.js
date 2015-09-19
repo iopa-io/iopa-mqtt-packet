@@ -41,22 +41,9 @@ function MQTTMessageCreateDefaults(app) {
     app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][IOPA.Protocol] = MQTTMIDDLEWARE.PROTOCOLVERSION;
  }
 
-MQTTMessageCreateDefaults.prototype.invoke = function MQTTMessageCreateDefaults_invoke(context, next){
-     context[SERVER.Fetch] = MQTTMessageCreateDefaults_fetch.bind(this, context[IOPA.Seq], context[SERVER.Fetch]);
+MQTTMessageCreateDefaults.prototype.dispatch = function MQTTMessageCreateDefaults_dispatch(context, next){
+     MqttFormat.defaultContext(context);
      return next();
-};
-
- /**
- * MQTT IOPA Middleware for Client Message Request Defaults
- *
- * @method fetch
- * @private
- */
-function MQTTMessageCreateDefaults_fetch(id, nextFetch, urlStr, options, pipeline){
-    return nextFetch(urlStr, options, function(context){
-           MqttFormat.defaultContext(context);
-           return pipeline(context);
-    });
 };
 
 module.exports = MQTTMessageCreateDefaults;

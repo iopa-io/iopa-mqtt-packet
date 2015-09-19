@@ -21,7 +21,24 @@ const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER,
     MQTT = constants.MQTT
-  
+    
+ const MQTTMIDDLEWARE = {CAPABILITY: "urn:io.iopa:mqtt", PROTOCOLVERSION: "OASIS 3.1.1"},
+    packageVersion = require('../../package.json').version;
+
+ /**
+ * MQTT IOPA Middleware to dispatch record
+ *
+ * @class MQTTClientPacketSend
+ * @this app.properties  the IOPA AppBuilder Properties Dictionary, used to add server.capabilities
+ * @constructor
+ * @public
+ */
+function MQTTClientPacketSend(app) { 
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][SERVER.Version] = packageVersion;
+    app.properties[SERVER.Capabilities][MQTTMIDDLEWARE.CAPABILITY][IOPA.Protocol] = MQTTMIDDLEWARE.PROTOCOLVERSION;
+ }
+ 
 /**
  * Parses IOPA request into MQTT packet
  * IOPA Default App in Client Pipeline
@@ -29,20 +46,22 @@ const constants = require('iopa').constants,
  * @method invoke
  * @param context IOPA context dictionary
  */
-module.exports = function MQTTClientPacketSend(context) {    
-    try {
-        MqttFormat.sendRequest(context);
-    }
-    catch (err) {
-        context[SERVER.Logger].error("[MQTT-CLIENTPACKETSEND] Unable to send MQTT packet " 
-            + context[IOPA.Method] + ": " + err);
-        context =null;
-        return new Promise(function(resolve, reject){reject('Unable to parse IOPA Message into MQTT packet');});
-    }
-  
-      return new Promise(function(resolve, reject){
-         context[IOPA.Events].on(IOPA.EVENTS.Response, MQTTClientPacket_Response.bind(this, context, resolve));
-     });
+MQTTClientPacketSend.prototype.dispatch = function MQTTClientPacketSend_dispatch(context, next) {
+    return next().then(function () {
+        try {
+            MqttFormat.sendRequest(context);
+        }
+        catch (err) {
+            context[SERVER.Logger].error("[MQTT-CLIENTPACKETSEND] Unable to send MQTT packet "
+                + context[IOPA.Method] + ": " + err);
+            context = null;
+            return new Promise(function (resolve, reject) { reject('Unable to parse IOPA Message into MQTT packet'); });
+        }
+
+        return new Promise(function (resolve, reject) {
+            context[IOPA.Events].on(IOPA.EVENTS.Response, MQTTClientPacket_Response.bind(this, context, resolve));
+        });
+    });
 };
 
 function MQTTClientPacket_Response(context, done, response) {
@@ -55,3 +74,5 @@ function MQTTClientPacket_Response(context, done, response) {
         break;
      }
 }
+
+ module.exports = MQTTClientPacketSend;

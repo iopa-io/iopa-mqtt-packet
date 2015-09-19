@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+ global.Promise = require('bluebird');
+
 const iopa = require('iopa')
     , util = require('util')
     , Events = require('events')
     , mqtt = require('../index.js')
-    , iopaStream = require('iopa-common-stream');
-    
+    , iopaStream = require('iopa-common-stream')
+        , tcp = require('iopa-tcp')
+        
+    const iopaMessageLogger = require('iopa-logger').MessageLogger
+
 var should = require('should');
 
 var numberConnections = 0;
@@ -31,9 +35,11 @@ describe('#MQTT Server()', function() {
   var sessionContextDemo;
   
   before(function(done){
-     var appServer = new iopa.App();
+     var app = new iopa.App();
+     app.use(mqtt);
+     app.use(iopaMessageLogger);
       
-      appServer.use(function(context, next){
+      app.use(function(context, next){
        
         if (["CONNACK", "PINGRESP"].indexOf(context.response["iopa.Method"]) >=0)
           context.response["iopa.Body"].end();
@@ -53,8 +59,7 @@ describe('#MQTT Server()', function() {
           });
           
              
-      var serverOptions = {};
-      server = mqtt.createServer(serverOptions,appServer.build());
+       server = tcp.createServer(app.build());
       
       if (!process.env.PORT)
         process.env.PORT = 1883;
@@ -85,7 +90,7 @@ describe('#MQTT Server()', function() {
          mqttClient.send("/", 
             {"iopa.Method": "CONNECT", 
             "mqtt.Clean": false,
-            "mqtt.ClientID": "CLIENTID-1" }   
+            "mqtt.ClientId": "CLIENTID-1" }   
           ).then(function(response){
             numberConnections ++;
               response["iopa.Method"].should.equal('CONNACK');
@@ -114,7 +119,7 @@ describe('#MQTT Server()', function() {
             
     it('should close', function(done) {
        server.close().then(function(){
-         server.log.info("[TEST] MQTT DEMO Closed");
+         console.log("[TEST] MQTT DEMO Closed");
          done();});
     });
     

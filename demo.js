@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+global.Promise = require('bluebird');
 
 const iopa = require('iopa')
     , mqtt = require('./index.js')      
     , util = require('util')
+    , tcp = require('iopa-tcp')
   
 const iopaMessageLogger = require('iopa-logger').MessageLogger
 
 var sessionContextDemo;
 
-var appServer = new iopa.App();
-appServer.use(iopaMessageLogger);
+var app = new iopa.App();
+app.use(mqtt);
+app.use(iopaMessageLogger);
 
-appServer.use(function(context, next){
+app.use(function(context, next){
      context.log.info("[DEMO] SERVER MQTT DEMO " + context["iopa.Method"] + " " + context["iopa.Path"]);
    
   if (["CONNACK", "PINGRESP"].indexOf(context.response["iopa.Method"]) >=0)
@@ -43,14 +46,8 @@ appServer.use(function(context, next){
        return next();
 
 });
-
-var serverOptions = {
-    "server.LocalPortReuse" : true
-  , "server.IsGlobalClient" : false
-};
                   
-var server = mqtt.createServer(serverOptions, appServer.build());
-server.connectuse(iopaMessageLogger);
+var server = tcp.createServer(app.build());
 
 if (!process.env.PORT)
   process.env.PORT = 1883;
@@ -60,12 +57,12 @@ var mqttClient;
 
 server.listen(process.env.PORT, process.env.IP)
   .then(function(){
-    server.log.info("[DEMO] Server is on port " + server.port );
+    app.log.info("[DEMO] Server is on port " + server.port );
     return server.connect("mqtt://127.0.0.1");
   })
   .then(function(cl){
      mqttClient = cl;
-    server.log.info("[DEMO] Client is on port " + mqttClient["server.LocalPort"]);
+    app.log.info("[DEMO] Client is on port " + mqttClient["server.LocalPort"]);
     
    return mqttClient.send("/", 
     {"iopa.Method": "CONNECT", 
@@ -73,15 +70,14 @@ server.listen(process.env.PORT, process.env.IP)
     "mqtt.ClientID": "CLIENTID-1" });   
   
   }).then(function(response){
-       server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
+       app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
        
-       return mqttClient.send("/projector", {"iopa.Method": "SUBSCRIBE"});
-        }, function(err){console.log(err);})
+       return mqttClient.send("/projector", "SUBSCRIBE");
+        })
   .then(function(response){
-       server.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
+       app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
        sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
              // no PUBACK Responses so no  promise then here
        setTimeout(function(){
          server.close()}, 2000);
     })
-    .catch(function(err){ console.log(err);  throw err;});

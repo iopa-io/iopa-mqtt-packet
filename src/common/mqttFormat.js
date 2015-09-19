@@ -152,7 +152,8 @@ module.exports.inboundParseMonitor = function ResponseParser(parentContext, even
         response[SERVER.LocalPort] = context[SERVER.LocalPort]; 
            
         context[SERVER.Fetch] = parentContext[SERVER.Fetch];
-        
+        context[SERVER.Dispatch] = parentContext[SERVER.Dispatch];
+
         _parsePacket(packet, context);
         parentContext[IOPA.Events].emit(eventType, context);
      
