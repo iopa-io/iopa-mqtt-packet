@@ -17,10 +17,8 @@
   },
   "dependencies": {
     "iopa": "^1.2.0",
-    "iopa-server": "^1.2.0",
     "iopa-common-middleware": "^1.2.0",
     "iopa-common-stream": "^1.2.0",
-    "iopa-tcp": "^1.2.0",
     "mqtt-packet": "~3.2.0"
   },
   "keywords": [
