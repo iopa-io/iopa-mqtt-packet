@@ -111,23 +111,18 @@ describe('#MQTT Server()', function() {
                "iopa.Method": "PUBLISH", 
                "iopa.Body": new iopaStream.OutgoingStream('Hello World')
                }
-               , function(){   
-                         done();
+               , function(){ 
+                 done();
                   });
           });
     });
             
     it('should close', function(done) {
-      try {
-         server.close().then(function(){
-         console.log("[TEST] MQTT DEMO Closed");
-         done();});
-      }
-        catch (ex) {
-          console.log(ex);
-  
-      }
-       
+           setTimeout(function(){
+               server.close().then(function(){
+          console.log("[TEST] MQTT DEMO Closed");
+          done();});}, 1000);
+    
     });
     
 });
