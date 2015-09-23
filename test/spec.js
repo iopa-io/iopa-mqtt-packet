@@ -106,7 +106,7 @@ describe('#MQTT Server()', function() {
           .then(function(response){
              response["iopa.Method"].should.equal('SUBACK');
              
-             sessionContextDemo.fetch("/projector", 
+             sessionContextDemo["server.Fetch"]("/projector", 
              {
                "iopa.Method": "PUBLISH", 
                "iopa.Body": new iopaStream.OutgoingStream('Hello World')

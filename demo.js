@@ -52,7 +52,6 @@ var server = tcp.createServer(app.build());
 if (!process.env.PORT)
   process.env.PORT = 1883;
 
-var context;
 var mqttClient;
 
 server.listen(process.env.PORT, process.env.IP)
@@ -63,21 +62,15 @@ server.listen(process.env.PORT, process.env.IP)
   .then(function(cl){
      mqttClient = cl;
     app.log.info("[DEMO] Client is on port " + mqttClient["server.LocalPort"]);
-    
-   return mqttClient.send("/", 
-    {"iopa.Method": "CONNECT", 
-    "mqtt.Clean": false,
-    "mqtt.ClientID": "CLIENTID-1" });   
+    return mqttClient.send("/", "CONNECT");   
   
   }).then(function(response){
-       app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
-       
+       app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);  
        return mqttClient.send("/projector", "SUBSCRIBE");
-        })
+    })
   .then(function(response){
        app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
        sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
-             // no PUBACK Responses so no  promise then here
        setTimeout(function(){
-         server.close()}, 2000);
+         server.close()}, 200);
     })

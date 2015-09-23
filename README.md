@@ -9,7 +9,7 @@
 ## About
 `iopa-mqtt-packet` is an API-first OASIS Message Queuing Telemetry Transport (MQTT) packet transport for the Internet of Things (IoT), based on the Internet of Protocols Alliance (IOPA) specification  
 
-It servers MQTT messages in standard IOPA format.
+It servers MQTT messages in standard IOPA format.  It is a lower level utility package that is not required directly if you are using the recommended [`iopa-mqtt`](htttps://github.com/iopa-io/iopa-mqtt) package.
 
 It is not intended as a standalone MQTT server/broker, as it does not contain the standard protocol logic for acknowledges, subscribes etc., but can form the basis for one.  See [`iopa-mqtt`](https://github.com/iopa-io/iopa-mqtt) for an open-source, standards-based, drop-in replacement for MQTT clients and brokers such as [`mqtt.js`](https://github.com/mqttjs/MQTT.js) [`mosca`](https://github.com/mcollina/mosca) and [`aedes`](https://github.com/mcollina/aedes).
 
@@ -40,68 +40,60 @@ Includes:
 
 ## Usage
     
-### Simple Hello World Server and Client
+### Simple Hello World server with raw protocol (use [`iopa-mqtt`](htttps://github.com/iopa-io/iopa-mqtt) for simplified version)
 ``` js
 const iopa = require('iopa')
     , mqtt = require('iopa-mqtt-packet')      
-
-var app = new iopa.App();
-
-app.use(function(context, next){
-   context.response.end('Hello World from ' + context["iopa.Path"]);
-   return next();
-    });
-
-var server = mqtt.createServer(serverOptions, app.build());
-
-server.listen(mqtt.constants.mqttPort).then(function(){
-   var context = server.fetch('mqtt://127.0.0.1/device', {"iopa.Methd": "CONNECT"});
-   context.response.pipe(process.stdout);
-   context["iopa.Events"].on("response", function() {
-   context.response["iopa.Body"].on('end', function() {
-       process.exit(0)
-    });
-  });
+    , tcp = require('iopa-tcp')
   
-  context.end();
-
- });
-
-``` 
-
-### Multicast and UniCast Server Client Example
-``` js
-const iopa = require('iopa')
-    , mqtt = require('iopa-mqtt')      
-    , Promise = require('bluebird')
-
 var app = new iopa.App();
+app.use(mqtt);
+
+var sessionContextDemo;
+
 app.use(function(context, next){
-  context.response["iopa.Body"].end('Hello World from ' + context["iopa.Path"]);
-   return next();
-    });
+   if (["CONNACK", "PINGRESP"].indexOf(context.response["iopa.Method"]) >=0)
+     context.response["iopa.Body"].end();
+
     
-var serverOptions = {
-    "server.LocalPortMulticast" : MQTT.constants.mqttMulticastIPV4
-  , "server.LocalPortReuse" : true
-  , "server.IsGlobalClient" : false
-}
+  if (["SUBACK"].indexOf(context.response["iopa.Method"]) >=0)
+    {
+       context.response["mqtt.Granted"] =[0,1,2,128];
+       context.response["iopa.Body"].write("");
+    }
+    
+   if (["CONNECT"].indexOf(context["iopa.Method"]) >=0)
+        sessionContextDemo = context["server.ParentContext"];
+       return next();
 
-var server = mqtt.createServer(serverOptions, app.build());
-
-Promise.join( server.listen(process.env.PORT, process.env.IP)).then(function(){
-   server.log.info("Server is on port " + server.port );
-  
-   server.fetch('mqtt://127.0.0.1:' + server.port + '/projector', function(context) {
-    context.response["iopa.Body"].pipe(process.stdout);
-    context["iopa.Body"].end("CONNECT");
-   });
 });
+                  
+var server = tcp.createServer(app.build());
+
+if (!process.env.PORT)
+  process.env.PORT = 1883;
+
+var mqttClient;
+
+server.listen(process.env.PORT, process.env.IP)
+  .then(function(){
+    return server.connect("mqtt://127.0.0.1");
+  })
+  .then(function(cl){
+     mqttClient = cl;
+     return mqttClient.send("/", "CONNECT");   
+  }).then(function(response){
+         return mqttClient.send("/projector", "SUBSCRIBE");
+        })
+  .then(function(response){
+        sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
+       setTimeout(function(){
+         server.close()}, 2000);
+    })
+
 ``` 
   
 ## Roadmap
-
-Next steps are to build a reference framework to link together server, client, discovery and other protocol functions.
 
 Adding additional features of the protocol such as QOS1 and QOS2, is as simple as adding a new middleware function 
   
