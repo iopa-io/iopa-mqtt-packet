@@ -56,7 +56,7 @@ MQTTServerChannelParser.prototype.channel = function MQTTServerChannelParser_cha
         channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE] = resolve;
     }); 
     
-    channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, function(){
+    channelContext[IOPA.CancelToken].promise.then(function(reason){
         channelContext[SERVER.Capabilities][THISMIDDLEWARE.CAPABILITY][THISMIDDLEWARE.SESSIONCLOSE]();
     });
     

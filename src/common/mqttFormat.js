@@ -190,7 +190,7 @@ module.exports.defaultContext = function MQTTPacketClient_defaultContext(context
        context[MQTT.UserName] = null;
        context[MQTT.Password] = null;
        context[MQTT.Will] = undefined;
-       context[IOPA.MessageId] = "connect";
+       context[IOPA.MessageId] = "urn:io.iopa:mqtt:connect";
        break;
     case MQTT.METHODS.SUBSCRIBE:
        context[MQTT.Qos] = 0;
@@ -208,10 +208,10 @@ module.exports.defaultContext = function MQTTPacketClient_defaultContext(context
        context[MQTT.Retain] = false;
        break; 
     case MQTT.METHODS.PINGREQ:
-       context[IOPA.MessageId] = "ping";
+       context[IOPA.MessageId] = "urn:io.iopa:mqtt:ping";
        break;
     case MQTT.METHODS.DISCONNECT:
-        context[IOPA.MessageId] = "disconnect";
+        context[IOPA.MessageId] = "urn:io.iopa:mqtt:disconnect";
        break;
   }
   
@@ -279,15 +279,15 @@ function _parsePacket(packet, context) {
            context[IOPA.Body] = new iopaStream.BufferStream(packet.payload);
            break; 
         case MQTT.METHODS.PINGREQ:
-           context[IOPA.MessageId] = "ping";
+           context[IOPA.MessageId] = "urn:io.iopa:mqtt:ping";
            break;
         case MQTT.METHODS.DISCONNECT:
-           context[IOPA.MessageId] = "disconnect";
+           context[IOPA.MessageId] = "urn:io.iopa:mqtt:disconnect";
            break; 
          case MQTT.METHODS.CONNACK:
            context[IOPA.StatusCode] = packet.returnCode;
            context[MQTT.SessionPresent] = packet.sessionPresent;
-           context[IOPA.MessageId] = "connect";
+           context[IOPA.MessageId] = "urn:io.iopa:mqtt:connect";
            break;
          case MQTT.METHODS.SUBACK:
           context[IOPA.MessageId] = packet.messageId;
