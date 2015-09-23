@@ -118,9 +118,16 @@ describe('#MQTT Server()', function() {
     });
             
     it('should close', function(done) {
-       server.close().then(function(){
+      try {
+         server.close().then(function(){
          console.log("[TEST] MQTT DEMO Closed");
          done();});
+      }
+        catch (ex) {
+          console.log(ex);
+  
+      }
+       
     });
     
 });
