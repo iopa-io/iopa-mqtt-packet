@@ -189,7 +189,7 @@ module.exports.defaultContext = function MQTTPacketClient_defaultContext(context
        context[MQTT.Keepalive] = 0;
        context[MQTT.UserName] = null;
        context[MQTT.Password] = null;
-       context[MQTT.Will] = undefined;
+       context[MQTT.Will] = null;
        context[IOPA.MessageId] = "urn:io.iopa:mqtt:connect";
        break;
     case MQTT.METHODS.SUBSCRIBE:
@@ -349,7 +349,7 @@ function _parsePacket(packet, context) {
            break;
         case MQTT.METHODS.DISCONNECT:
             response[IOPA.Method] = null;
-            response[IOPA.Body] = undefined;
+            response[IOPA.Body] = null;
         break;
      }
      response[IOPA.ReasonPhrase] = MQTT.RETURN_CODES[response[IOPA.StatusCode]];
