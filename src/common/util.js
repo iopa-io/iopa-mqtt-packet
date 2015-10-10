@@ -14,5 +14,19 @@
  * limitations under the License.
  */
 
-var Server = require('./src/middleware/iopaMQTT.js');
-module.exports = Server;
+const maxMessageId   = Math.pow(2, 16);
+var _lastMessageId = Math.floor(Math.random() * (maxMessageId - 1));
+
+/**
+ * MQTT  Utility for sequential message id
+ * 
+ * @function _nextMessageId
+ * @returns number
+ * @private
+ */
+module.exports.nextMessageId = function () {
+  if (++_lastMessageId === maxMessageId)
+    _lastMessageId = 1;
+
+  return _lastMessageId;
+};

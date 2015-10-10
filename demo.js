@@ -38,12 +38,13 @@ app.use(function(context, next){
   if (["SUBACK"].indexOf(context.response["iopa.Method"]) >=0)
     {
        context.response["mqtt.Granted"] =[0,1,2,128];
-       context.response["iopa.Body"].write("");
+       context.response["iopa.Body"].end("");
     }
     
    if (["CONNECT"].indexOf(context["iopa.Method"]) >=0)
         sessionContextDemo = context["server.ParentContext"];
-       return next();
+        
+   return next();
 
 });
                   
@@ -62,15 +63,17 @@ server.listen(process.env.PORT, process.env.IP)
   .then(function(cl){
      mqttClient = cl;
     app.log.info("[DEMO] Client is on port " + mqttClient["server.LocalPort"]);
-    return mqttClient.send("/", "CONNECT");   
+    return mqttClient.create("/", "CONNECT").send();   
   
   }).then(function(response){
        app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);  
-       return mqttClient.send("/projector", "SUBSCRIBE");
-    })
-  .then(function(response){
-       app.log.info("[DEMO] MQTT DEMO Response " + response["iopa.Method"]);
-       sessionContextDemo.send("/projector", "PUBLISH", new Buffer('Hello World'));
-       setTimeout(function(){
-         server.close()}, 200);
+       return mqttClient.create("/projector", "SUBSCRIBE").observe(
+         function(context){console.log(context["iopa.Body"].toString());
+          var ctx =  sessionContextDemo.create("/projector", "PUBLISH");
+          ctx["iopa.Body"].end(new Buffer('Hello World'));
+          ctx.send();
+          setTimeout(function(){
+            server.close()}, 2000);
+         
+         });
     })

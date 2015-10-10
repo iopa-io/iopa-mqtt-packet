@@ -47,7 +47,7 @@ describe('#MQTT Server()', function() {
           if (["SUBACK"].indexOf(context.response["iopa.Method"]) >=0)
             {
               context.response["mqtt.Granted"] =[0,1,2,128];
-              context.response["iopa.Body"].write("");
+              context.response["iopa.Body"].end("");
             }
     
           if (["CONNECT"].indexOf(context["iopa.Method"]) >=0)
@@ -87,11 +87,11 @@ describe('#MQTT Server()', function() {
     
     it('should connect via MQTT', function(done) {
       
-         mqttClient.send("/", 
+         mqttClient.create("/", 
             {"iopa.Method": "CONNECT", 
             "mqtt.Clean": false,
             "mqtt.ClientId": "CLIENTID-1" }   
-          ).then(function(response){
+          ).send().then(function(response){
             numberConnections ++;
               response["iopa.Method"].should.equal('CONNACK');
             events.emit("CLIENT-CONNACK");
@@ -101,19 +101,19 @@ describe('#MQTT Server()', function() {
     
     it('should subscribe via MQTT', function(done) {
       
-       mqttClient.send("/projector", 
+       mqttClient.create("/projector", 
           {"iopa.Method": "SUBSCRIBE"})
-          .then(function(response){
+          .send().then(function(response){
              response["iopa.Method"].should.equal('SUBACK');
              
-             sessionContextDemo["server.Fetch"]("/projector", 
+            var context = sessionContextDemo.create("/projector", 
              {
                "iopa.Method": "PUBLISH", 
-               "iopa.Body": new iopaStream.OutgoingStream('Hello World')
-               }
-               , function(){ 
-                 done();
-                  });
+               "iopa.Body": new iopaStream.OutgoingMessageStream('Hello World')
+               });
+               context.dispatch(true);
+               done();
+          
           });
     });
             
@@ -121,7 +121,7 @@ describe('#MQTT Server()', function() {
            setTimeout(function(){
                server.close().then(function(){
           console.log("[TEST] MQTT DEMO Closed");
-          done();});}, 1000);
+          done();});}, 200);
     
     });
     
