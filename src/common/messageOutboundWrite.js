@@ -107,5 +107,5 @@ module.exports = function messageOutboundWrite(context) {
   }
 
   var buf = MqttPacket.generate(packet);
-  context[SERVER.RawStream].write(buf);
+  context[SERVER.RawStream].write(buf, null, context[IOPA.Body].emit.bind(this, "sent"));
 };
